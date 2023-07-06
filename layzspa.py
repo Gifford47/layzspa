@@ -7,6 +7,8 @@ import threading
 from configparser import ConfigParser
 import argparse
 
+#API Doc: https://documenter.getpostman.com/view/10809108/SzYXYfP6#3303abe4-7b12-43e0-9747-1dcbd0a18424
+
 # Set default configfile
 configfile = 'config.ini'
 
@@ -126,14 +128,17 @@ class layzspa():
             payload = str(msg.payload.decode('utf-8'))
             self.layzspa_setcmd(cmd, payload)
 
-    def get_data_interval(self):
+    def layzspa_get_devinfo_interval(self):
         interval = int(self.config['MQTT']['get_data_interval'])
+        if interval == 0:
+            while 1:
+                time.sleep(60)          # loop forever (main thread shouldn´t end)
         if interval < 600:
             interval = 600
         while 1:
-            time.sleep(interval)
             self.layzspa_get_devinfo()
             self.mqtt_pub_data()
+            time.sleep(interval)
 
     def layzspa_login_check(self):
         if (self.did is None or self.api_token is None or self.did == '' or self.api_token == '') and (self.email and self.password):
@@ -221,8 +226,7 @@ if __name__ == "__main__":
 
     if args.loop:
         spa.connect_to_mqtt()
-        spa.layzspa_get_devinfo()
         spa.mqtt_pub_data()
         spa.client.loop_start()
-        spa.get_data_interval()         # refresh data every X seconds
+        spa.layzspa_get_devinfo_interval()         # refresh data every X seconds. call at least!!!
 
